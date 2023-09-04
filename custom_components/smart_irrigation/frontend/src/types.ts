@@ -70,6 +70,7 @@ export class SmartIrrigationZone {
   mapping?: number;
   lead_time: number;
   maximum_duration?: number;
+  maximum_bucket?: number;
 
   constructor(
     i: number,
@@ -93,7 +94,8 @@ export class SmartIrrigationZone {
     this.multiplier = 1.0;
     this.mapping = undefined;
     this.lead_time = 0;
-    this.maximum_duration = undefined;
+    this.maximum_duration = 3600; //default maximum duration to one hour = 3600 seconds
+    this.maximum_bucket = 50; //default maximum bucket size to 50 mm
   }
 }
 

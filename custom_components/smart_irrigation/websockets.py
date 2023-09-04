@@ -155,12 +155,14 @@ class SmartIrrigationZoneView(HomeAssistantView):
                 vol.Optional(const.ATTR_CALCULATE_ALL): cv.boolean,
                 vol.Optional(const.ATTR_UPDATE): cv.boolean,
                 vol.Optional(const.ATTR_UPDATE_ALL): cv.boolean,
+                vol.Optional(const.ATTR_RESET_ALL_BUCKETS): cv.boolean,
                 vol.Optional(const.ATTR_OVERRIDE_CACHE): cv.boolean,
                 vol.Optional(const.ZONE_EXPLANATION): vol.Coerce(str),
                 vol.Optional(const.ZONE_MULTIPLIER): vol.Coerce(float),
                 vol.Optional(const.ZONE_MAPPING): vol.Or(int,str,None),
                 vol.Optional(const.ZONE_LEAD_TIME): vol.Coerce(float),
                 vol.Optional(const.ZONE_MAXIMUM_DURATION): vol.Coerce(float),
+                vol.Optional(const.ZONE_MAXIMUM_BUCKET): vol.Or(float, int, None),
             }
         )
     )
