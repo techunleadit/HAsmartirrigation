@@ -1,3 +1,4 @@
+import datetime
 import voluptuous as vol
 import logging
 
@@ -56,8 +57,11 @@ class SmartIrrigationConfigView(HomeAssistantView):
                 vol.Optional(const.CONF_AUTO_CALC_ENABLED): cv.boolean,
                 vol.Optional(const.CONF_AUTO_UPDATE_ENABLED): cv.boolean,
                 vol.Optional(const.CONF_AUTO_UPDATE_SCHEDULE): cv.string,
-                vol.Optional(const.CONF_AUTO_UPDATE_TIME): cv.string,
+                vol.Optional(const.CONF_AUTO_UPDATE_DELAY): cv.string,
                 vol.Optional(const.CONF_AUTO_UPDATE_INTERVAL): cv.string,
+                vol.Optional(const.CONF_AUTO_CLEAR_ENABLED): cv.boolean,
+                vol.Optional(const.CONF_CLEAR_TIME): cv.string,
+
             }
         )
     )
@@ -117,6 +121,7 @@ class SmartIrrigationMappingView(HomeAssistantView):
                 vol.Optional(const.MAPPING_MAPPINGS): vol.Coerce(dict),
                 vol.Optional(const.ATTR_REMOVE): cv.boolean,
                 vol.Optional(const.MAPPING_DATA): vol.Coerce(list),
+                vol.Optional(const.MAPPING_DATA_LAST_UPDATED): vol.Or(None, str, datetime.datetime),
             }
         )
     )
@@ -163,6 +168,8 @@ class SmartIrrigationZoneView(HomeAssistantView):
                 vol.Optional(const.ZONE_LEAD_TIME): vol.Coerce(float),
                 vol.Optional(const.ZONE_MAXIMUM_DURATION): vol.Coerce(float),
                 vol.Optional(const.ZONE_MAXIMUM_BUCKET): vol.Or(float, int, None),
+                vol.Optional(const.ZONE_LAST_CALCULATED): vol.Or(None, str, datetime.datetime),
+                vol.Optional(const.ATTR_CLEAR_ALL_WEATHERDATA): cv.boolean,
             }
         )
     )

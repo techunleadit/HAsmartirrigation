@@ -83,8 +83,6 @@ class SmartIrrigationViewModules extends SubscribeMixin(LitElement) {
     this.modules = [...this.modules, newModule];
 
     this.saveToHA(newModule);
-    //get latest version from HA
-    this._fetchData();
   }
 
   private handleRemoveModule(ev: Event, index: number): void {
@@ -100,6 +98,8 @@ class SmartIrrigationViewModules extends SubscribeMixin(LitElement) {
       return;
     }
     saveModule(this.hass, module);
+    //get latest version from HA
+    this._fetchData();
   }
   private renderModule(
     module: SmartIrrigationModule,
@@ -137,7 +137,7 @@ class SmartIrrigationViewModules extends SubscribeMixin(LitElement) {
               ? html` ${localize(
                   "panels.modules.cards.module.errors.cannot-delete-module-because-zones-use-it",
                   this.hass.language
-                )}.`
+                )}`
               : html` <svg
                   style="width:24px;height:24px"
                   viewBox="0 0 24 24"
@@ -187,7 +187,7 @@ class SmartIrrigationViewModules extends SubscribeMixin(LitElement) {
       r = html`${r}<input
           type="checkbox"
           id="${name + index}"
-          .value="${val}"
+          .checked=${val}
           @input="${(e: Event) =>
             this.handleEditConfig(index, {
               ...mod,
@@ -243,7 +243,6 @@ class SmartIrrigationViewModules extends SubscribeMixin(LitElement) {
               },
             })}"
         >
-
           ${Object.entries(schemaline["options"]).map(
             ([key, value]) =>
               html`<option
@@ -253,7 +252,7 @@ class SmartIrrigationViewModules extends SubscribeMixin(LitElement) {
                 ${localize(
                   "panels.modules.cards.module.translated-options." +
                     getPart(value, 1),
-                    hasslanguage
+                  hasslanguage
                 )}
               </option>`
           )}

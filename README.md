@@ -27,7 +27,7 @@ This integration uses reference evapotranspiration values and calculates water b
 
 The integration uses the [PyETo module to calculate the evapotranspiration value (fao56)](https://pyeto.readthedocs.io/en/latest/fao56_penman_monteith.html). Also, please see the [How this works](https://github.com/jeroenterheerdt/HAsmartirrigation/wiki/How-this-component-works) Wiki page. But also other modules are available and can be extended by the community.
 
-This is all the integration does, and this is on purpose to provide maximum flexibility. Users are expected to use the value of `sensor.[zone_name]` to interact with their irrigation system and afterwards call the `smart_irrigation.reset_bucket` service. [See the example automations below](#step-4-creating-automations).
+This is all the integration does, and this is on purpose to provide maximum flexibility. Users are expected to use the value of `sensor.smart_irrigation_[zone_name]` to interact with their irrigation system and afterwards call the `smart_irrigation.reset_bucket` service. [See the example automations below](#step-4-creating-automations).
 
 > **Note - use this integration at your own risk - we do not assume responsibility for any inconvience caused by using this integration. Always use common sense before deciding to irrigate using the calculations this integration provides. For example, irrigating during excessive rainfall might cause flooding. Again - we assume no responsibility for any inconvience caused.**
 
@@ -43,7 +43,7 @@ This is all the integration does, and this is on purpose to provide maximum flex
 
 4. Once a day (time is configurable) the `netto precipitation` is added/substracted from the `bucket,` which starts as empty. If the `bucket` is below zero, irrigation is required. 
 
-5. Irrigation should be run for `sensor.[zone_name]`, which is 0 if `bucket`  >=0. Afterwards, the `bucket` needs to be reset (using `reset_bucket`). It's up to the user of the integration to build the automation for this final step. See [Example automation](#step-4-creating-automations)
+5. Irrigation should be run for `sensor.smart_irrigation_[zone_name]`, which is 0 if `bucket`  >=0. Afterwards, the `bucket` needs to be reset (using `reset_bucket`). It's up to the user of the integration to build the automation for this final step. See [Example automation](#step-4-creating-automations)
 
 There are many more options available, see below. To understand how `precipitation`, `netto precipitation`, the `bucket` and irrigation interact, see [example behavior on the Wiki](https://github.com/jeroenterheerdt/HAsmartirrigation/wiki/Example-behavior-in-a-week).
 
@@ -96,11 +96,12 @@ You will need to specify the following:
 
 This page provides global settings.
 - Automatic duration calculation: If enabled set the time of calculation (HH:MM).
-- Automatic weather data update: If enabled specify how often sensor update should happen (minutes, hours, days). Warning: weatherdata update time must be on or after calculation time! 
+- Automatic weather data update: If enabled specify how often sensor update should happen (minutes, hours, days). Warning: weatherdata update time must be on or after calculation time!
+- Automatic  weather data pruning: If enabled configure time of pruning weather data. Use this to make sure that there is no left over weatherdata from previous days. Don't remove the weatherdata before you calculate and only use this option if you expect the automatic update to collect weatherdata after you calculated for the day. Ideally, you want to prune as late in the day as possible.
 
 #### ZONES
 
-Specify one or more irrigation zones here. The integration calculates irrigation duration per zone, depending on size, throughput, state, module and sensor group. A zone can be _disabled_ (so it doesn't do anything), _automatic_ or _manual_. If in automatic, duration is automatically calculated. If in manual, you specify the duration yourself also duration isn't reset by the reset_bucket services. If disabled, the zone is not included in any calculation.
+Specify one or more irrigation zones here. The integration calculates irrigation duration per zone, depending on size, throughput, state, module and sensor group. A zone can be _disabled_ (so it doesn't do anything), _automatic_ or _manual_. If in automatic, duration is automatically calculated. If in manual, you specify the duration yourself. Duration isn't reset by the reset_bucket services. If disabled, the zone is not included in any calculation.
 
 > **When entering any values in the configuration of this integration, keep in mind that the integration will expect inches, sq ft, gallons, gallons per minute, or mm, m<sup>2</sup>, liters, liters per minute respectively depending on the settings in Home Assistant (imperial vs metric system).
 
@@ -153,7 +154,9 @@ If you let PyETO to estimate from temperature or sun hours, it will not ask OWM 
 
 #### Sensor groups
 
-For sensor configuration take care to make sure the unit the integration expects is the same as your sensor provides. You can choose which sensors to use like average, maximum, minimum etc.
+For sensor configuration take care to make sure the unit the integration expects is the same as your sensor provides. You can choose which sensors to use like average, maximum, minimum etc.  If you use Open Weather Map, make sure your home zone coordinates are set correctly so the data is correct.  This is especially true if you set the coordinates manually in the configuration.yaml. 
+
+If you are using your own barometric pressure sensor, enter either the absolute or relative barometric pressure. Absolute barometric pressure is the actual pressure measured at your location and relative barometric pressure is the pressure calculated at sea level. Make this clear in the selection box.
 
 #### HELP
 
@@ -167,7 +170,7 @@ Once the integration is installed, the following entities, services and events w
 
 #### Entities
 
-##### sensor.[zone_name]
+##### sensor.smart_irrigation_[zone_name]
 
 Attributes:
 
@@ -184,7 +187,7 @@ Attributes:
 
 Sample screenshot:
 
-![](images/sensor.[zone_name].png?raw=true)
+![](images/sensor.smart_irrigation_[zone_name].png?raw=true)
 
 #### Services
 
@@ -214,22 +217,22 @@ The [How this works Wiki page](https://github.com/jeroenterheerdt/HAsmartirrigat
 
 ### Step 4: Creating Automations
 
-Since this integration does not interface with your irrigation system directly, you will need to use the data it outputs to create an automation that will start and stop your irrigation system for you. This way you can use this custom integration with any irrigation system you might have, regardless of how that interfaces with Home Assistant. In order for this to work correctly, you should base your automation on the value of `sensor.[zone_name]` as long as you run your automation after it was updated (e.g. 11:00 PM/23:00 hours local time). If that value is above 0 it is time to irrigate. Note that the value is the run time in seconds. Also, after irrigation, you need to call the `smart_irrigation.reset_bucket` service to reset the net irrigation tracking to 0.
+Since this integration does not interface with your irrigation system directly, you will need to use the data it outputs to create an automation that will start and stop your irrigation system for you. This way you can use this custom integration with any irrigation system you might have, regardless of how that interfaces with Home Assistant. In order for this to work correctly, you should base your automation on the value of `sensor.smart_irrigation_[zone_name]` as long as you run your automation after it was updated (e.g. 11:00 PM/23:00 hours local time). If that value is above 0 it is time to irrigate. Note that the value is the run time in seconds. Also, after irrigation, you need to call the `smart_irrigation.reset_bucket` service to reset the net irrigation tracking to 0.
 
 > **The last step in any automation is very important, since you will need to let the integration know you have finished irrigating and the evaporation counter can be reset by calling the `smart_irrigation.reset_bucket` service**
 
 #### Example Automation 1: one valve, potentially daily irrigation
-Here is an example automation that runs when the `smart_irrigation_start_irrigation_all_zones` event is fired. It checks if `sensor.[zone_name]` is above 0 and if it is it turns on `switch.irrigation_tap1`, waits the number of seconds as indicated by `sensor.[zone_name]` and then turns off `switch.irrigation_tap1`. Finally, it resets the bucket by calling the `smart_irrigation.reset_bucket` service. If you have multiple instances you will need to adjust the event, entities and service names accordingly.
+Here is an example automation that runs when the `smart_irrigation_start_irrigation_all_zones` event is fired. It checks if `sensor.smart_irrigation_[zone_name]` is above 0 and if it is it turns on `switch.irrigation_tap1`, waits the number of seconds as indicated by `sensor.smart_irrigation_[zone_name]` and then turns off `switch.irrigation_tap1`. Finally, it resets the bucket by calling the `smart_irrigation.reset_bucket` service. If you have multiple instances you will need to adjust the event, entities and service names accordingly.
 
 ```
 - alias: Smart Irrigation
-  description: 'Start Smart Irrigation at 06:00 and run it only if the `sensor.[zone_name]` is >0 and run it for precisely that many seconds'
+  description: 'Start Smart Irrigation at 06:00 and run it only if the `sensor.smart_irrigation_[zone_name]` is >0 and run it for precisely that many seconds'
 trigger:
   - platform: event
     event_type: smart_irrigation_start_irrigation_all_zones
 condition:
   - condition: numeric_state
-    entity_id: sensor.[zone_name]
+    entity_id: sensor.smart_irrigation_[zone_name]
     above: 0
   action:
   - service: switch.turn_on
@@ -242,7 +245,7 @@ condition:
     entity_id: switch.irrigation_tap1
   - service: smart_irrigation.reset_bucket
     data: {}
-    entity_id: sensor.[zone_name]
+    entity_id: sensor.smart_irrigation_[zone_name]
 ```
 
 [See more advanced examples in the Wiki](https://github.com/jeroenterheerdt/HAsmartirrigation/wiki/Automation-examples).
@@ -257,4 +260,4 @@ This [Wiki page](https://github.com/jeroenterheerdt/HAsmartirrigation/wiki/Examp
 
 ## Getting Open Weather Map API Key
 
-Go to https://openweathermap.org and create an account. You can enter any company and purpose while creating an account. After creating your account, go to API Keys and get your key. If the key does not work right away, no worries. The email you should have received from OpenWeaterMap says it will be activated 'within the next couple of hours'. So if it does not work right away, be patient a bit. You will need to sign up for the paid (but free for limited API calls) OneCall API 3.0 plan if you do not have a key already. You can use a key for the 3.0 and 2.5 version of the API.
+Go to https://openweathermap.org and create an account. You can enter any company and purpose while creating an account. After creating your account, You will need to sign up for the paid (but free for limited API calls) OneCall API 3.0 plan if you do not have a key already. Then, go to API Keys and get your key. If the key does not work right away, no worries. The email you should have received from OpenWeaterMap says it will be activated 'within the next couple of hours'. So if it does not work right away, be patient a bit.  You can use a key for the 3.0 and 2.5 version of the API. If you are worried about the cost of the API, You can put a rate limit below the paid threshold in the "Billing plans" page of your profile.

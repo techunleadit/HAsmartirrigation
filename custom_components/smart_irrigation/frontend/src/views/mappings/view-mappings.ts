@@ -25,8 +25,9 @@ import {
   MAPPING_CONF_AGGREGATE,
   MAPPING_CONF_AGGREGATE_OPTIONS,
   MAPPING_CONF_AGGREGATE_OPTIONS_DEFAULT,
-  MAPPING_CONF_AGGREGATE_OPTIONS_DEFAULT_MAX_TEMP,
-  MAPPING_CONF_AGGREGATE_OPTIONS_DEFAULT_MIN_TEMP,
+  //removing this as part of beta12. Temperature is the only thing we want to take and we will apply min and max aggregation on our own.
+  //MAPPING_CONF_AGGREGATE_OPTIONS_DEFAULT_MAX_TEMP,
+  //MAPPING_CONF_AGGREGATE_OPTIONS_DEFAULT_MIN_TEMP,
   MAPPING_CONF_AGGREGATE_OPTIONS_DEFAULT_PRECIPITATION,
   MAPPING_CONF_SENSOR,
   MAPPING_CONF_SOURCE,
@@ -39,16 +40,21 @@ import {
   MAPPING_DEWPOINT,
   MAPPING_EVAPOTRANSPIRATION,
   MAPPING_HUMIDITY,
-  MAPPING_MAX_TEMP,
-  MAPPING_MIN_TEMP,
+  //removing this as part of beta12. Temperature is the only thing we want to take and we will apply min and max aggregation on our own.
+  //MAPPING_MAX_TEMP,
+  //MAPPING_MIN_TEMP,
   MAPPING_PRECIPITATION,
   MAPPING_PRESSURE,
   MAPPING_SOLRAD,
   MAPPING_TEMPERATURE,
   MAPPING_WINDSPEED,
+  MAPPING_CONF_PRESSURE_TYPE,
+  MAPPING_CONF_PRESSURE_ABSOLUTE,
+  MAPPING_CONF_PRESSURE_RELATIVE,
 } from "../../const";
 import { prettyPrint, getOptionsForMappingType } from "../../helpers";
 import { mdiDelete } from "@mdi/js";
+import moment from "moment";
 
 @customElement("smart-irrigation-view-mappings")
 class SmartIrrigationViewMappings extends SubscribeMixin(LitElement) {
@@ -96,8 +102,9 @@ class SmartIrrigationViewMappings extends SubscribeMixin(LitElement) {
       [MAPPING_DEWPOINT]: "",
       [MAPPING_EVAPOTRANSPIRATION]: "",
       [MAPPING_HUMIDITY]: "",
-      [MAPPING_MAX_TEMP]: "",
-      [MAPPING_MIN_TEMP]: "",
+      //removing this as part of beta12. Temperature is the only thing we want to take and we will apply min and max aggregation on our own.
+      //[MAPPING_MAX_TEMP]: "",
+      //[MAPPING_MIN_TEMP]: "",
       [MAPPING_PRECIPITATION]: "",
       [MAPPING_PRESSURE]: "",
       [MAPPING_SOLRAD]: "",
@@ -152,6 +159,7 @@ class SmartIrrigationViewMappings extends SubscribeMixin(LitElement) {
       //below here we should go over all the mappings on the mapping object
       return html`
         <ha-card header="${mapping.id}: ${mapping.name}">
+        <div class="card-content">
           <div class="card-content">
             <label for="name${mapping.id}"
               >${localize(
@@ -172,22 +180,24 @@ class SmartIrrigationViewMappings extends SubscribeMixin(LitElement) {
             ${Object.entries(mapping.mappings).map(([value]) =>
               this.renderMappingSetting(index, value)
             )}
-            ${numberofzonesusingthismapping
-              ? html`${localize(
-                  "panels.mappings.cards.mapping.errors.cannot-delete-mapping-because-zones-use-it",
-                  this.hass.language
-                )}`
-              : html` <svg
-                  style="width:24px;height:24px"
-                  viewBox="0 0 24 24"
-                  id="deleteZone${index}"
-                  @click="${(e: Event) => this.handleRemoveMapping(e, index)}"
-                >
-                  <title>
-                    ${localize("common.actions.delete", this.hass.language)}
-                  </title>
-                  <path fill="#404040" d="${mdiDelete}" />
-                </svg>`}
+            ${
+              numberofzonesusingthismapping
+                ? html`${localize(
+                    "panels.mappings.cards.mapping.errors.cannot-delete-mapping-because-zones-use-it",
+                    this.hass.language
+                  )}`
+                : html` <svg
+                    style="width:24px;height:24px"
+                    viewBox="0 0 24 24"
+                    id="deleteZone${index}"
+                    @click="${(e: Event) => this.handleRemoveMapping(e, index)}"
+                  >
+                    <title>
+                      ${localize("common.actions.delete", this.hass.language)}
+                    </title>
+                    <path fill="#404040" d="${mdiDelete}" />
+                  </svg>`
+            }
           </div>
         </ha-card>
       `;
@@ -383,7 +393,8 @@ class SmartIrrigationViewMappings extends SubscribeMixin(LitElement) {
                   ...mapping.mappings,
                   [value]: {
                     ...mapping.mappings[value],
-                    [MAPPING_CONF_STATIC_VALUE]: (e.target as HTMLInputElement).value,
+                    [MAPPING_CONF_STATIC_VALUE]: (e.target as HTMLInputElement)
+                      .value,
                   },
                 },
               })}"
@@ -420,6 +431,38 @@ class SmartIrrigationViewMappings extends SubscribeMixin(LitElement) {
             ${this.renderUnitOptionsForMapping(value, mappingline)}
           </select>
         </div>`;
+
+      //specific case for pressure: absolute / relative
+      if (value == MAPPING_PRESSURE) {
+        r = html`${r}
+          <div class="mappingsettingline">
+            <label for="${value + index + MAPPING_CONF_PRESSURE_TYPE}"
+              >${localize(
+                "panels.mappings.cards.mapping.pressure-type",
+                this.hass.language
+              )}:</label
+            >
+            <select
+              type="text"
+              id="${value + index + MAPPING_CONF_PRESSURE_TYPE}"
+              @change="${(e: Event) =>
+                this.handleEditMapping(index, {
+                  ...mapping,
+                  mappings: {
+                    ...mapping.mappings,
+                    [value]: {
+                      ...mapping.mappings[value],
+                      [MAPPING_CONF_PRESSURE_TYPE]: (
+                        e.target as HTMLInputElement
+                      ).value,
+                    },
+                  },
+                })}"
+            >
+              ${this.renderPressureTypes(value, mappingline)}
+            </select>
+          </div>`;
+      }
     }
     if (mappingline[MAPPING_CONF_SOURCE] == MAPPING_CONF_SOURCE_SENSOR) {
       r = html`${r}
@@ -472,11 +515,14 @@ class SmartIrrigationViewMappings extends SubscribeMixin(LitElement) {
       let selected = MAPPING_CONF_AGGREGATE_OPTIONS_DEFAULT;
       if (value === MAPPING_PRECIPITATION) {
         selected = MAPPING_CONF_AGGREGATE_OPTIONS_DEFAULT_PRECIPITATION;
-      } else if (value === MAPPING_MAX_TEMP) {
-        selected = MAPPING_CONF_AGGREGATE_OPTIONS_DEFAULT_MAX_TEMP;
-      } else if (value === MAPPING_MIN_TEMP) {
-        selected = MAPPING_CONF_AGGREGATE_OPTIONS_DEFAULT_MIN_TEMP;
       }
+      //removing this as part of beta12. Temperature is the only thing we want to take and we will apply min and max aggregation on our own.
+      //else if (value === MAPPING_MAX_TEMP) {
+      //  selected = MAPPING_CONF_AGGREGATE_OPTIONS_DEFAULT_MAX_TEMP;
+      //}
+      //else if (value === MAPPING_MIN_TEMP) {
+      //  selected = MAPPING_CONF_AGGREGATE_OPTIONS_DEFAULT_MIN_TEMP;
+      //}
       if (mappingline[MAPPING_CONF_AGGREGATE]) {
         selected = mappingline[MAPPING_CONF_AGGREGATE];
       }
@@ -497,6 +543,37 @@ class SmartIrrigationViewMappings extends SubscribeMixin(LitElement) {
       return html`<option value="${agg}" ?selected="${agg === selected}">
         ${localize(label_to_use, this.hass.language)}
       </option>`;
+    }
+  }
+
+  private renderPressureTypes(value: any, mappingline: any): TemplateResult {
+    if (!this.hass || !this.config) {
+      return html``;
+    } else {
+      let r = html``;
+      const selected = mappingline[MAPPING_CONF_PRESSURE_TYPE];
+      r = html`${r}
+        <option
+          value="${MAPPING_CONF_PRESSURE_ABSOLUTE}"
+          ?selected="${selected === MAPPING_CONF_PRESSURE_ABSOLUTE}"
+        >
+          ${localize(
+            "panels.mappings.cards.mapping.pressure_types." +
+              MAPPING_CONF_PRESSURE_ABSOLUTE,
+            this.hass.language
+          )}
+        </option>
+        <option
+          value="${MAPPING_CONF_PRESSURE_RELATIVE}"
+          ?selected="${selected === MAPPING_CONF_PRESSURE_RELATIVE}"
+        >
+          ${localize(
+            "panels.mappings.cards.mapping.pressure_types." +
+              MAPPING_CONF_PRESSURE_RELATIVE,
+            this.hass.language
+          )}
+        </option>`;
+      return r;
     }
   }
   private renderUnitOptionsForMapping(

@@ -1,3 +1,4 @@
+import datetime
 import logging
 import attr
 from collections import OrderedDict
@@ -10,17 +11,21 @@ from homeassistant.util.unit_system import METRIC_SYSTEM
 from .const import (
     ATTR_NEW_BUCKET_VALUE,
     CONF_AUTO_CALC_ENABLED,
+    CONF_AUTO_CLEAR_ENABLED,
+    CONF_AUTO_UPDATE_DELAY,
     CONF_AUTO_UPDATE_ENABLED,
     CONF_AUTO_UPDATE_INTERVAL,
     CONF_AUTO_UPDATE_SCHEDULE,
-    CONF_AUTO_UPDATE_TIME,
     CONF_CALC_TIME,
+    CONF_CLEAR_TIME,
     CONF_DEFAULT_AUTO_CALC_ENABLED,
+    CONF_DEFAULT_AUTO_CLEAR_ENABLED,
+    CONF_DEFAULT_AUTO_UPDATE_DELAY,
     CONF_DEFAULT_AUTO_UPDATE_INTERVAL,
     CONF_DEFAULT_AUTO_UPDATE_SCHEDULE,
-    CONF_DEFAULT_AUTO_UPDATE_TIME,
     CONF_DEFAULT_AUTO_UPDATED_ENABLED,
     CONF_DEFAULT_CALC_TIME,
+    CONF_DEFAULT_CLEAR_TIME,
     CONF_DEFAULT_MAXIMUM_BUCKET,
     CONF_DEFAULT_MAXIMUM_DURATION,
     CONF_DEFAULT_USE_OWM,
@@ -29,6 +34,8 @@ from .const import (
     CONF_UNITS,
     CONF_USE_OWM,
     DOMAIN,
+    ZONE_LAST_CALCULATED,
+    MAPPING_DATA_LAST_UPDATED,
     MAPPING_CONF_SENSOR,
     MAPPING_CONF_SOURCE,
     MAPPING_CONF_SOURCE_NONE,
@@ -55,6 +62,7 @@ from .const import (
     MODULE_NAME,
     MODULE_DESCRIPTION,
     MODULE_SCHEMA,
+    START_EVENT_FIRED_TODAY,
     ZONE_BUCKET,
     ZONE_ID,
     ZONE_LEAD_TIME,
@@ -77,7 +85,7 @@ _LOGGER = logging.getLogger(__name__)
 
 DATA_REGISTRY = f"{DOMAIN}_storage"
 STORAGE_KEY = f"{DOMAIN}.storage"
-STORAGE_VERSION = 2
+STORAGE_VERSION = 3
 SAVE_DELAY = 10
 
 
@@ -101,6 +109,7 @@ class ZoneEntry:
     lead_time = attr.ib(type=float, default=None)
     maximum_duration = attr.ib(type=float, default=CONF_DEFAULT_MAXIMUM_DURATION)
     maximum_bucket = attr.ib(type=float, default=CONF_DEFAULT_MAXIMUM_BUCKET)
+    last_calculated = attr.ib(type=datetime, default=None)
 
 @attr.s(slots=True, frozen=True)
 class ModuleEntry:
@@ -120,6 +129,7 @@ class MappingEntry:
     name = attr.ib(type=str, default=None)
     mappings = attr.ib(type=str,default=None)
     data = attr.ib(type=str,default="[]")
+    data_last_updated = attr.ib(type=datetime, default=None)
 
 @attr.s(slots=True, frozen=True)
 class Config:
@@ -128,17 +138,18 @@ class Config:
     calctime = attr.ib(type=str, default=CONF_DEFAULT_CALC_TIME)
     units = attr.ib(type=str, default=None)
     use_owm = attr.ib(type=bool, default=False)
-    autocalcenabled = attr.ib(type=bool,default=True)
-    autoupdateenabled = attr.ib(type=bool, default=True)
+    autocalcenabled = attr.ib(type=bool,default=CONF_AUTO_CALC_ENABLED)
+    autoupdateenabled = attr.ib(type=bool, default=CONF_AUTO_UPDATE_ENABLED)
     autoupdateschedule = attr.ib(type=str, default=CONF_DEFAULT_AUTO_UPDATE_SCHEDULE)
-    autoupdatefirsttime = attr.ib(type=str, default=CONF_DEFAULT_AUTO_UPDATE_TIME)
+    autoupdatedelay = attr.ib(type=str, default=CONF_DEFAULT_AUTO_UPDATE_DELAY)
     autoupdateinterval = attr.ib(type=str, default=CONF_DEFAULT_AUTO_UPDATE_INTERVAL)
+    autoclearenabled =attr.ib(type=bool,default=CONF_DEFAULT_AUTO_CLEAR_ENABLED)
+    cleardatatime = attr.ib(type=str, default=CONF_DEFAULT_CLEAR_TIME)
+    starteventfiredtoday = attr.ib(type=bool, default=False)
 
 class MigratableStore(Store):
     async def _async_migrate_func(self, old_version, data: dict):
         return data
-
-
 
 class SmartIrrigationStorage:
     """Class to hold Smart Irrigation configuration data."""
@@ -161,8 +172,11 @@ class SmartIrrigationStorage:
                                 autocalcenabled = CONF_DEFAULT_AUTO_CALC_ENABLED,
                                 autoupdateenabled = CONF_DEFAULT_AUTO_UPDATED_ENABLED,
                                 autoupdateschedule = CONF_DEFAULT_AUTO_UPDATE_SCHEDULE,
-                                autoupdatefirsttime = CONF_DEFAULT_AUTO_UPDATE_TIME,
-                                autoupdateinterval = CONF_DEFAULT_AUTO_UPDATE_INTERVAL
+                                autoupdatedelay = CONF_DEFAULT_AUTO_UPDATE_DELAY,
+                                autoupdateinterval = CONF_DEFAULT_AUTO_UPDATE_INTERVAL,
+                                autoclearenabled = CONF_DEFAULT_AUTO_CLEAR_ENABLED,
+                                cleardatatime = CONF_DEFAULT_CLEAR_TIME,
+                                starteventfiredtoday = False
                                 )
         zones: "OrderedDict[str, ZoneEntry]" = OrderedDict()
         modules: "OrderedDict[str, ModuleEntry]" = OrderedDict()
@@ -175,8 +189,12 @@ class SmartIrrigationStorage:
                             use_owm=data["config"].get(CONF_USE_OWM,CONF_DEFAULT_USE_OWM), autocalcenabled=data["config"].get(CONF_AUTO_CALC_ENABLED, CONF_DEFAULT_AUTO_CALC_ENABLED),
                             autoupdateenabled=data["config"].get(CONF_AUTO_UPDATE_ENABLED, CONF_DEFAULT_AUTO_UPDATED_ENABLED),
                             autoupdateschedule=data["config"].get(CONF_AUTO_UPDATE_SCHEDULE, CONF_DEFAULT_AUTO_UPDATE_SCHEDULE),
-                            autoupdatefirsttime=data["config"].get(CONF_AUTO_UPDATE_TIME, CONF_DEFAULT_AUTO_UPDATE_TIME),
-                            autoupdateinterval=data["config"].get(CONF_AUTO_UPDATE_INTERVAL, CONF_DEFAULT_AUTO_UPDATE_INTERVAL))
+                            autoupdatedelay=data["config"].get(CONF_AUTO_UPDATE_DELAY, CONF_DEFAULT_AUTO_UPDATE_DELAY),
+                            autoupdateinterval=data["config"].get(CONF_AUTO_UPDATE_INTERVAL, CONF_DEFAULT_AUTO_UPDATE_INTERVAL),
+                            autoclearenabled=data["config"].get(CONF_AUTO_CLEAR_ENABLED, CONF_DEFAULT_AUTO_CLEAR_ENABLED),
+                            cleardatatime=data["config"].get(CONF_CLEAR_TIME, CONF_DEFAULT_CLEAR_TIME),
+                            starteventfiredtoday = data["config"].get(START_EVENT_FIRED_TODAY, False)
+            )
 
             if "zones" in data:
                 for zone in data["zones"]:
@@ -194,6 +212,7 @@ class SmartIrrigationStorage:
                         lead_time = zone[ZONE_LEAD_TIME],
                         maximum_duration = zone.get(ZONE_MAXIMUM_DURATION, CONF_DEFAULT_MAXIMUM_DURATION),
                         maximum_bucket = zone.get(ZONE_MAXIMUM_BUCKET, CONF_DEFAULT_MAXIMUM_BUCKET),
+                        last_calculated = zone.get(ZONE_LAST_CALCULATED, None)
                     )
             if "modules" in data:
                 for module in data["modules"]:
@@ -218,12 +237,20 @@ class SmartIrrigationStorage:
                     )
             if "mappings" in data:
                 for mapping in data["mappings"]:
+                    the_map = mapping.get(MAPPING_MAPPINGS)
+                    #remove max and min temp is present in mapping, they should only be there for old versions.
+                    if MAPPING_MAX_TEMP in the_map:
+                        the_map.pop(MAPPING_MAX_TEMP)
+                    if MAPPING_MIN_TEMP in the_map:
+                        the_map.pop(MAPPING_MIN_TEMP)
                     mappings[mapping[MAPPING_ID]] = MappingEntry(
                         id= mapping[MAPPING_ID],
                         name=mapping[MAPPING_NAME],
-                        mappings=mapping.get(MAPPING_MAPPINGS),
+                        mappings=the_map,
                         data=mapping.get(MAPPING_DATA),
+                        data_last_updated = mapping.get(MAPPING_DATA_LAST_UPDATED, None)
                     )
+
 
         self.config = config
         self.zones = zones

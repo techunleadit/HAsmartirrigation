@@ -6,7 +6,7 @@ import json
 import logging
 import math
 
-from .const import MAPPING_DEWPOINT, MAPPING_HUMIDITY, MAPPING_MAX_TEMP, MAPPING_MIN_TEMP, MAPPING_PRECIPITATION, MAPPING_PRESSURE, MAPPING_TEMPERATURE, MAPPING_WINDSPEED
+from .const import MAPPING_DEWPOINT, MAPPING_HUMIDITY, MAPPING_MAX_TEMP, MAPPING_MIN_TEMP, MAPPING_PRECIPITATION, MAPPING_PRESSURE, MAPPING_TEMPERATURE, MAPPING_WINDSPEED, RETRIEVED_AT
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -49,12 +49,13 @@ OWM_validators = {
 class OWMClient:  # pylint: disable=invalid-name
     """Open Weather Map Client."""
 
-    def __init__(self,api_key, api_version, latitude, longitude, cache_seconds=0, override_cache = False):
+    def __init__(self,api_key, api_version, latitude, longitude, elevation, cache_seconds=0, override_cache = False):
         """Init."""
         self.api_key = api_key.strip().replace(" ","")
         self.api_version = api_version.strip()
         self.longitude = longitude
         self.latitude = latitude
+        self.elevation = elevation
         self.url = OWM_URL.format(api_version, "metric", latitude, longitude, api_key)
         #defaults to no cache
         self.cache_seconds = cache_seconds
@@ -69,6 +70,7 @@ class OWMClient:  # pylint: disable=invalid-name
             try:
                 req = requests.get(self.url,timeout=60) #60 seconds timeout
                 doc = json.loads(req.text)
+                _LOGGER.debug("OWMClient get_forecast_data called API {} and received {}".format(self.url, doc))
                 if "cod" in doc:
                     if doc["cod"] != 200:
                         raise IOError("Cannot talk to OWM API, check API key.")
@@ -84,7 +86,7 @@ class OWMClient:  # pylint: disable=invalid-name
                                 self.raiseIOError(k)
                             else:
                                 # check value
-                                if k not in [OWM_wind_speed_key_name, OWM_temp_key_name]:
+                                if k not in [OWM_wind_speed_key_name, OWM_temp_key_name, OWM_pressure_key_name]:
                                     if (
                                         data[k] < OWM_validators[k]["min"]
                                         or data[k] > OWM_validators[k]["max"]
@@ -116,8 +118,13 @@ class OWMClient:  # pylint: disable=invalid-name
                                 elif k is OWM_wind_speed_key_name:
                                     # OWM reports wind speed at 10m height, so need to convert to 2m:
                                     data[OWM_wind_speed_key_name] = data[OWM_wind_speed_key_name] * (4.87 / math.log((67.8 * 10) - 5.42))
+                                elif k is OWM_pressure_key_name:
+                                    #OWM provides relative pressure, replace it with estimated absolute pressure returning!
+                                    data[OWM_pressure_key_name] = self.relative_to_absolute_pressure(data[OWM_pressure_key_name], self.elevation)
                         parsed_data[MAPPING_WINDSPEED] = data[OWM_wind_speed_key_name]
+
                         parsed_data[MAPPING_PRESSURE] = data[OWM_pressure_key_name]
+
                         parsed_data[MAPPING_HUMIDITY] = data[OWM_humidity_key_name]
                         parsed_data[MAPPING_TEMPERATURE] = data[OWM_temp_key_name]['day']
                         #also put in min/max here
@@ -151,12 +158,30 @@ class OWMClient:  # pylint: disable=invalid-name
             _LOGGER.info("Returning cached OWM forecastdata")
             return self._cached_forecast_data
 
+    def relative_to_absolute_pressure(self, pressure, height):
+        """
+        Convert relative pressure to absolute pressure.
+        """
+        # Constants
+        g = 9.80665  # m/s^2
+        M = 0.0289644  # kg/mol
+        R = 8.31447  # J/(mol*K)
+        T0 = 288.15  # K
+        p0 = 101325  # Pa
+
+        # Calculate temperature at given height
+        temperature = T0 - (g * M * height) / (R * T0)
+        # Calculate absolute pressure at given height
+        absolute_pressure = pressure * (T0 / temperature) ** (g * M / (R * 287))
+        return absolute_pressure
+
     def get_data(self):
         """Validate and return data."""
         if self._cached_data is None or self.override_cache or datetime.datetime.now() >= self._last_time_called + datetime.timedelta(seconds=self.cache_seconds):
             try:
                 req = requests.get(self.url,timeout=60) #60 seconds timeout
                 doc = json.loads(req.text)
+                _LOGGER.debug("OWMClient get_data called API {} and received {}".format(self.url, doc))
                 if "cod" in doc:
                     if doc["cod"] != 200:
                         raise IOError("Cannot talk to OWM API, check API key.")
@@ -170,7 +195,7 @@ class OWMClient:  # pylint: disable=invalid-name
                             self.raiseIOError(k)
                         else:
                             # check value
-                            if k is not OWM_wind_speed_key_name:
+                            if k not in [OWM_wind_speed_key_name, OWM_pressure_key_name]:
                                 if (
                                     data[k] < OWM_validators[k]["min"]
                                     or data[k] > OWM_validators[k]["max"]
@@ -184,14 +209,20 @@ class OWMClient:  # pylint: disable=invalid-name
                             elif k is OWM_wind_speed_key_name:
                                 # OWM reports wind speed at 10m height, so need to convert to 2m:
                                 data[OWM_wind_speed_key_name] = data[OWM_wind_speed_key_name] * (4.87 / math.log((67.8 * 10) - 5.42))
+                            elif k is OWM_pressure_key_name:
+                                    #OWM provides relative pressure, replace it with estimated absolute pressure returning!
+                                    data[OWM_pressure_key_name] = self.relative_to_absolute_pressure(data[OWM_pressure_key_name], self.elevation)
                     parsed_data[MAPPING_WINDSPEED] = data[OWM_wind_speed_key_name]
                     parsed_data[MAPPING_PRESSURE] = data[OWM_pressure_key_name]
                     parsed_data[MAPPING_HUMIDITY] = data[OWM_humidity_key_name]
                     parsed_data[MAPPING_TEMPERATURE] = data[OWM_temp_key_name]
-                    #also put in min/max here as just the current temp
-                    parsed_data[MAPPING_MAX_TEMP] = data[OWM_temp_key_name]
-                    parsed_data[MAPPING_MIN_TEMP] = data[OWM_temp_key_name]
                     parsed_data[MAPPING_DEWPOINT] = data[OWM_dew_point_key_name]
+
+                    #NOT used: also put in min/max here as just the current temp
+                    #removing this as part of beta12. Temperature is the only thing we want to take and we will apply min and max aggregation on our own.
+                    #parsed_data[MAPPING_MAX_TEMP] = data[OWM_temp_key_name]
+                    #parsed_data[MAPPING_MIN_TEMP] = data[OWM_temp_key_name]
+
                     #add precip from daily
                     dailydata = doc["daily"][0]
                     if dailydata is not None:
@@ -203,6 +234,11 @@ class OWMClient:  # pylint: disable=invalid-name
                         if "snow" in dailydata:
                             snow = float(dailydata["snow"])
                         parsed_data[MAPPING_PRECIPITATION] = rain+snow
+
+                        #get max temp and min temp and store
+                        #removing this as part of beta12. Temperature is the only thing we want to take and we will apply min and max aggregation on our own.
+                        #parsed_data[MAPPING_MIN_TEMP] = dailydata[OWM_temp_key_name]["min"]
+                        #parsed_data[MAPPING_MAX_TEMP] = dailydata[OWM_temp_key_name]["max"]
                     else:
                         parsed_data[MAPPING_PRECIPITATION] = 0.0
 

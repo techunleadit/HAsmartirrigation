@@ -1,4 +1,4 @@
-export const VERSION = "v2023.9.0-beta9";
+export const VERSION = "v2023.9.0-beta23";
 export const REPO = "https://github.com/jeroenterheerdt/HASmartIrrigation;";
 export const ISSUES_URL = REPO + "/issues";
 
@@ -12,6 +12,8 @@ export const CONF_AUTO_UPDATE_ENABLED = "autoupdateenabled";
 export const CONF_AUTO_UPDATE_SCHEDULE = "autoupdateschedule";
 export const CONF_AUTO_UPDATE_TIME = "autoupdatefirsttime";
 export const CONF_AUTO_UPDATE_INTERVAL = "autoupdateinterval";
+export const CONF_AUTO_CLEAR_ENABLED = "autoclearenabled";
+export const CONF_CLEAR_TIME = "cleardatatime";
 
 export const AUTO_UPDATE_SCHEDULE_MINUTELY = "minutes";
 export const AUTO_UPDATE_SCHEDULE_HOURLY = "hours";
@@ -22,8 +24,9 @@ export const CONF_METRIC = "metric";
 export const MAPPING_DEWPOINT = "Dewpoint";
 export const MAPPING_EVAPOTRANSPIRATION = "Evapotranspiration";
 export const MAPPING_HUMIDITY = "Humidity";
-export const MAPPING_MAX_TEMP = "Maximum Temperature";
-export const MAPPING_MIN_TEMP = "Minimum Temperature";
+//removing this as part of beta12. Temperature is the only thing we want to take and we will apply min and max aggregation on our own.
+//export const MAPPING_MAX_TEMP = "Maximum Temperature";
+//export const MAPPING_MIN_TEMP = "Minimum Temperature";
 export const MAPPING_PRECIPITATION = "Precipitation";
 export const MAPPING_PRESSURE = "Pressure";
 export const MAPPING_SOLRAD = "Solar Radiation";
@@ -33,6 +36,9 @@ export const MAPPING_WINDSPEED = "Windspeed";
 export const MAPPING_CONF_SOURCE_OWM = "owm";
 export const MAPPING_CONF_SOURCE_SENSOR = "sensor";
 export const MAPPING_CONF_SOURCE_STATIC_VALUE = "static";
+export const MAPPING_CONF_PRESSURE_TYPE = "pressure_type";
+export const MAPPING_CONF_PRESSURE_ABSOLUTE = "absolute";
+export const MAPPING_CONF_PRESSURE_RELATIVE = "relative";
 export const MAPPING_CONF_SOURCE_NONE = "none";
 export const MAPPING_CONF_SOURCE = "source";
 export const MAPPING_CONF_SENSOR = "sensorentity";
@@ -42,8 +48,9 @@ export const MAPPING_DATA = "data";
 export const MAPPING_CONF_AGGREGATE = "aggregate";
 export const MAPPING_CONF_AGGREGATE_OPTIONS_DEFAULT = "average";
 export const MAPPING_CONF_AGGREGATE_OPTIONS_DEFAULT_PRECIPITATION = "last";
-export const MAPPING_CONF_AGGREGATE_OPTIONS_DEFAULT_MAX_TEMP = "maximum";
-export const MAPPING_CONF_AGGREGATE_OPTIONS_DEFAULT_MIN_TEMP = "minimum";
+//removing this as part of beta12. Temperature is the only thing we want to take and we will apply min and max aggregation on our own.
+//export const MAPPING_CONF_AGGREGATE_OPTIONS_DEFAULT_MAX_TEMP = "maximum";
+//export const MAPPING_CONF_AGGREGATE_OPTIONS_DEFAULT_MIN_TEMP = "minimum";
 export const MAPPING_CONF_AGGREGATE_OPTIONS = [
   "average",
   "first",

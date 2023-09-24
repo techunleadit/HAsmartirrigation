@@ -24,6 +24,7 @@ import {
   calculateAllZones,
   updateAllZones,
   resetAllBuckets,
+  clearAllWeatherdata,
 } from "../../data/websockets";
 import { SubscribeMixin } from "../../subscribe-mixin";
 
@@ -54,6 +55,7 @@ import {
   ZONE_STATE,
   ZONE_THROUGHPUT,
 } from "../../const";
+import moment, { Moment } from "moment";
 
 @customElement("smart-irrigation-view-zones")
 class SmartIrrigationViewZones extends SubscribeMixin(LitElement) {
@@ -136,6 +138,13 @@ class SmartIrrigationViewZones extends SubscribeMixin(LitElement) {
       return;
     }
     resetAllBuckets(this.hass);
+  }
+
+  private handleClearAllWeatherdata(): void {
+    if (!this.hass) {
+      return;
+    }
+    clearAllWeatherdata(this.hass);
   }
 
   private handleAddZone(): void {
@@ -316,8 +325,53 @@ class SmartIrrigationViewZones extends SubscribeMixin(LitElement) {
           <path fill="#404040" d="${mdiPailRemove}" />
         </svg>`;
 
+      //get mapping last updated and datapoints
+      let the_mapping;
+      let mapping_last_updated = "-";
+      let mapping_number_of_datapoints = 0;
+      if (zone.mapping != undefined) {
+        the_mapping = this.mappings.filter((o) => o.id === zone.mapping)[0];
+        if (the_mapping != undefined) {
+          if (the_mapping.data_last_updated != undefined) {
+            mapping_last_updated = moment(the_mapping.data_last_updated).format(
+              "YYYY-MM-DD HH:mm:ss");
+            if (the_mapping.data != undefined) {
+              mapping_number_of_datapoints = the_mapping.data.length;
+            }
+          }
+        }
+      }
       return html`
         <ha-card header="${zone.name}">
+          <div class="card-content">
+            <label for="last_calculated${index}"
+              >${localize(
+                "panels.zones.labels.last_calculated",
+                this.hass.language
+              )}:
+              ${zone.last_calculated
+                ? moment(zone.last_calculated).format("YYYY-MM-DD HH:mm:ss")
+                : "-"}</label
+            >
+          </div>
+          <div class="card-content">
+            <label for="last_updated${index}"
+              >${localize(
+                "panels.zones.labels.data-last-updated",
+                this.hass.language
+              )}:
+              ${mapping_last_updated}</label
+            >
+          </div>
+          <div class="card-content">
+            <label for="last_updated${index}"
+              >${localize(
+                "panels.zones.labels.data-number-of-data-points",
+                this.hass.language
+              )}:
+              ${mapping_number_of_datapoints}</label
+            >
+          </div>
           <div class="card-content">
             <label for="name${index}"
               >${localize(
@@ -682,6 +736,10 @@ class SmartIrrigationViewZones extends SubscribeMixin(LitElement) {
       )}</button>
                 <button @click="${this.handleResetAllBuckets}">${localize(
         "panels.zones.cards.zone-actions.actions.reset-all-buckets",
+        this.hass.language
+      )}</button>
+      <button @click="${this.handleClearAllWeatherdata}">${localize(
+        "panels.zones.cards.zone-actions.actions.clear-all-weatherdata",
         this.hass.language
       )}</button>
             </div>

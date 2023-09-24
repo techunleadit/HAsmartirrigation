@@ -233,10 +233,10 @@ def convert_length(from_unit, to_unit, val):
         return val
     if to_unit == UNIT_MM:
         if from_unit == UNIT_INCH:
-            return float(float(val)*MM_TO_INCH_FACTOR)
+            return float(float(val)*INCH_TO_MM_FACTOR)
     elif to_unit == UNIT_INCH:
         if from_unit == UNIT_MM:
-            return float(float(val)*INCH_TO_MM_FACTOR)
+            return float(float(val)*MM_TO_INCH_FACTOR)
     #unknown conversion
     return None
 
@@ -278,6 +278,29 @@ def check_reference_et(reference_et):
     except Exception:  # pylint: disable=broad-except
         return False
 
+def relative_to_absolute_pressure(pressure, height):
+    """
+    Convert relative pressure to absolute pressure.
+    """
+    # Constants
+    g = 9.80665  # m/s^2
+    M = 0.0289644  # kg/mol
+    R = 8.31447  # J/(mol*K)
+    T0 = 288.15  # K
+    p0 = 101325  # Pa
+
+    # Calculate temperature at given height
+    temperature = T0 - (g * M * height) / (R * T0)
+
+    # Calculate absolute pressure at given height
+    absolute_pressure = pressure * (T0 / temperature) ** (g * M / (R * 287))
+
+    return absolute_pressure
+
+def altitudeToPressure(alt):
+    """Take altitude in meters and convert it to hPa = mbar."""
+    return (100 * ((44331.514 - alt) / 11880.516) ** (1 / 0.1902632)/100)
+
 async def test_api_key(hass,api_key, api_version):
     """Test access to Open Weather Map API here."""
     client = OWMClient(
@@ -285,6 +308,7 @@ async def test_api_key(hass,api_key, api_version):
         api_version=api_version.strip(),
         latitude=52.353218,
         longitude=5.0027695,
+        elevation=1,
     )
     try:
         await hass.async_add_executor_job(client.get_data)
