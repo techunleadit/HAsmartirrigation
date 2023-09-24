@@ -1,7 +1,7 @@
 """Store constants."""
 
 
-VERSION = "v2023.9.0-beta9"
+VERSION = "v2023.9.1"
 NAME = "Smart Irrigation"
 MANUFACTURER = "@jeroenterheerdt"
 
@@ -9,7 +9,9 @@ DOMAIN = "smart_irrigation"
 CUSTOM_COMPONENTS = "custom_components"
 
 LANGUAGE_FILES_DIR = "translations"
-SUPPORTED_LANGUAGES = ["de","en","nl"]
+SUPPORTED_LANGUAGES = ["de","en","es","fr","it","nl","no"]
+
+START_EVENT_FIRED_TODAY = "starteventfiredtoday"
 
 CONF_OWM_API_KEY = "owm_api_key"
 CONF_OWM_API_VERSION = "owm_api_version"
@@ -44,9 +46,13 @@ CONF_AUTO_UPDATE_HOURLY = "hours"
 CONF_AUTO_UPDATE_DAILY = "days"
 CONF_DEFAULT_AUTO_UPDATE_SCHEDULE=CONF_AUTO_UPDATE_HOURLY
 CONF_DEFAULT_AUTO_UPDATED_ENABLED = True
-CONF_AUTO_UPDATE_TIME = "autoupdatefirsttime"
-CONF_DEFAULT_AUTO_UPDATE_TIME = "22:55"
+CONF_AUTO_UPDATE_DELAY = "autoupdatedelay"
+CONF_DEFAULT_AUTO_UPDATE_DELAY = "0"
 CONF_AUTO_UPDATE_INTERVAL = "autoupdateinterval"
+CONF_AUTO_CLEAR_ENABLED = "autoclearenabled"
+CONF_DEFAULT_AUTO_CLEAR_ENABLED = True
+CONF_CLEAR_TIME = "cleardatatime"
+CONF_DEFAULT_CLEAR_TIME = "23:59"
 CONF_DEFAULT_AUTO_UPDATE_INTERVAL = "1"
 CONF_UNITS = "units"
 CONF_IMPERIAL = "imperial"
@@ -74,6 +80,7 @@ ATTR_UPDATE = "update"
 ATTR_UPDATE_ALL = "update_all"
 ATTR_OVERRIDE_CACHE = "override_cache"
 ATTR_RESET_ALL_BUCKETS = "reset_all_buckets"
+ATTR_CLEAR_ALL_WEATHERDATA = "clear_all_weatherdata"
 
 ZONE_ID = "id"
 ZONE_NAME = "name"
@@ -95,6 +102,7 @@ ZONE_MAPPING = "mapping"
 ZONE_LEAD_TIME = "lead_time"
 ZONE_MAXIMUM_DURATION = "maximum_duration"
 ZONE_MAXIMUM_BUCKET = "maximum_bucket"
+ZONE_LAST_CALCULATED = "last_calculated"
 
 MODULE_DIR = "calcmodules"
 MODULE_ID = "id"
@@ -109,6 +117,7 @@ CONF_METRIC = "metric"
 MAPPING_ID = "id"
 MAPPING_NAME = "name"
 MAPPING_DATA = "data"
+MAPPING_DATA_LAST_UPDATED = "data_last_updated"
 MAPPING_MAPPINGS = "mappings"
 MAPPING_DEWPOINT = "Dewpoint"
 MAPPING_EVAPOTRANSPIRATION = "Evapotranspiration"
@@ -130,6 +139,9 @@ MAPPING_CONF_SOURCE = "source"
 MAPPING_CONF_SENSOR = "sensorentity"
 MAPPING_CONF_STATIC_VALUE = "static_value"
 MAPPING_CONF_UNIT = "unit"
+MAPPING_CONF_PRESSURE_TYPE = "pressure_type"
+MAPPING_CONF_PRESSURE_ABSOLUTE = "absolute"
+MAPPING_CONF_PRESSURE_RELATIVE = "relative"
 MAPPING_CONF_AGGREGATE = "aggregate"
 MAPPING_CONF_AGGREGATE_AVERAGE = "average"
 MAPPING_CONF_AGGREGATE_FIRST = "first"
@@ -151,6 +163,9 @@ MAPPING_CONF_AGGREGATE_OPTIONS = [
   MAPPING_CONF_AGGREGATE_MINIMUM,
   MAPPING_CONF_AGGREGATE_SUM,
 ]
+
+#For timestamps
+RETRIEVED_AT = "retrieved" #on weatherdata
 
 EVENT_IRRIGATE_START = "start_irrigation_all_zones"
 
@@ -218,3 +233,4 @@ SERVICE_RESET_ALL_BUCKETS = "reset_all_buckets"
 SERVICE_SET_BUCKET = "set_bucket"
 SERVICE_SET_ALL_BUCKETS = "set_all_buckets"
 SERVICE_ENTITY_ID = "entity_id"
+SERVICE_CLEAR_WEATHERDATA = "clear_all_weather_data"
