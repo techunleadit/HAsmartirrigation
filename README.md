@@ -14,6 +14,9 @@
 
 ![](logo.png?raw=true)
 
+```diff
+- WARNING: upgrading from V1 (V0.0.X) to V2 (V2023.X.X)? Read the instructions below!
+```
 | :warning: WARNING Are you upgrading from v0.0.X (aka V1) to V2023.X.X (aka V2)? |
 |:---------------------------|
 | Stop what you're doing and [capture your V1 configuration](https://github.com/jeroenterheerdt/HAsmartirrigation/wiki/Migrating-from-version-1-(v0.0.X)-to-version-2-(202X.X.X)) _before_ installing V2. V2 is a complete overhaul of this integration and there is no upgrade path. This means that effectively you will have to start over. See the [Wiki](https://github.com/jeroenterheerdt/HAsmartirrigation/wiki/Migrating-from-version-1-(v0.0.X)-to-version-2-(202X.X.X)) for instructions. We will not be able to recover your V1 configuration if you don't capture it before installing V2. |
@@ -49,6 +52,8 @@ This is all the integration does, and this is on purpose to provide maximum flex
 5. Irrigation should be run for `sensor.smart_irrigation_[zone_name]`, which is 0 if `bucket`  >=0. Afterwards, the `bucket` needs to be reset (using `reset_bucket`). It's up to the user of the integration to build the automation for this final step. See [Example automation](https://github.com/jeroenterheerdt/HAsmartirrigation#step-4-creating-automations)
 
 There are many more options available, see below. To understand how `precipitation`, `netto precipitation`, the `bucket` and irrigation interact, see [example behavior on the Wiki](https://github.com/jeroenterheerdt/HAsmartirrigation/wiki/Example-behavior-in-a-week).
+
+Also available: [tutorial videos on Youtube](https://youtube.com/playlist?list=PLUHIAUPJHMiakbda92--fgb6A0hFReAo7&si=82Xc6mHoLDwFBfCP).
 
 ## Operation Modes
 
@@ -153,7 +158,7 @@ If you let PyETO to estimate from temperature or sun hours, it will not ask OWM 
   - Forecast days: How many forecast days taken into account
 - 1:Static: static configurable netto precipitation.
   - Delta: netto precipitation
-- Passthrough: Passthrough module returns the value of an evapotranspiration sensor as delta.  
+- Passthrough: Passthrough module returns the value of an evapotranspiration sensor as delta. Passthrough takes your evapotranspiration sensor and returns its value. It bypasses all calculations, except aggregates.
 
 #### Sensor groups
 
@@ -229,7 +234,7 @@ Here is an example automation that runs when the `smart_irrigation_start_irrigat
 
 ```
 - alias: Smart Irrigation
-  description: 'Start Smart Irrigation at 06:00 and run it only if the `sensor.smart_irrigation_[zone_name]` is >0 and run it for precisely that many seconds'
+  description: 'Start Smart Irrigation based on event and run it only if the `sensor.smart_irrigation_[zone_name]` is >0 and run it for precisely that many seconds'
 trigger:
   - platform: event
     event_type: smart_irrigation_start_irrigation_all_zones
