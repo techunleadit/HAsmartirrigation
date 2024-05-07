@@ -98,6 +98,11 @@
             "temperature": "Temperatura",
             "windspeed": "Velocità del vento"
           },
+          "pressure_types": {
+            "absolute": "assoluta",
+            "relative": "relativa"
+          },
+          "pressure-type": "La pressione è",
           "sensor-aggregate-of-sensor-values-to-calculate": "dei valori del sensore per calcolare la durata",
           "sensor-aggregate-use-the": "Usa il",
           "sensor-entity": "Entità sensore",
@@ -165,7 +170,8 @@
           "actions": {
             "calculate-all": "Calcola tutte le zone",
             "update-all": "Aggiorna tutte le zone",
-            "reset-all-buckets": "Reimposta tutte le zone"
+            "reset-all-buckets": "Reimposta tutte le zone",
+            "clear-all-weatherdata": "Cancella tutti i dati meteo"
           },
           "header": "Azioni su tutte le zone"
         }
